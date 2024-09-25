@@ -1,63 +1,140 @@
-import re
-from transformers import pipeline
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report
-from scraping import fetch_news_from_b3
+import csv
+from datetime import datetime
+import requests
+from bs4 import BeautifulSoup
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import torch
+import numpy as np
+import hashlib
 
-# Função para pré-processar o texto
-def preprocess_text(text):
-    text = text.lower()
-    text = re.sub(r'\W', ' ', text)  # Remove caracteres especiais
-    text = re.sub(r'\s+', ' ', text)  # Remove espaços extras
-    return text
 
-# Análise de sentimento usando Hugging Face
-def analyze_sentiment_huggingface(text):
-    classifier = pipeline('sentiment-analysis')  # Carregar o pipeline de análise de sentimentos
-    result = classifier(text)[0]  # Classificar o texto
-    return 1 if result['label'] == 'POSITIVE' else 0  # Retornar 1 para positivo e 0 para negativo
+def fetch_news_valor():
+    
+    url = "https://valor.globo.com"
+    response = requests.get(url)
 
-# Função principal para executar o pipeline
-def main():
-    # Coletar as notícias do site da B3
-    news_data = fetch_news_from_b3()
+    if response.status_code == 200:
+        soup = BeautifulSoup(response.content, 'html.parser')
 
-    if news_data:
-        # Pré-processar as notícias
-        processed_news = [preprocess_text(news) for news in news_data]
+        news_list = []
+        
+        highlight_content = soup.find_all('div', class_='highlight__content')
+        for content in highlight_content:
+            content_dict = {}
+            content_title = content.find('h2', class_='highlight__title').find('a')
 
-        # Rotulação automática usando Hugging Face
-        labels = [analyze_sentiment_huggingface(news) for news in processed_news]
+            title = content_title.get_text().strip()
 
-        # Transformação TF-IDF
-        tfidf_vectorizer = TfidfVectorizer(max_features=5000)
-        X = tfidf_vectorizer.fit_transform(processed_news).toarray()
+            content_dict['id'] = generate_id(title)
+            content_dict['title'] = title
+            content_dict['link'] = content_title['href']
+            content_dict['sentiment'] = ''
+            content_dict['sentiment_score'] = 0
+            content_dict['scrapped_at'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # Divisão dos dados em treino e teste
-        X_train, X_test, y_train, y_test = train_test_split(X, labels, test_size=0.2, random_state=42)
+            news_list.append(content_dict)
 
-        # Treinando o modelo
-        classifier = RandomForestClassifier(n_estimators=100, random_state=42)
-        classifier.fit(X_train, y_train)
+        
+        highlight_links = soup.find_all('div', class_='highlight__links')
+        for content in highlight_links:
+            list_link = content.find('ul').find_all('a')
+            for link in list_link:
+                content_dict = {}
 
-        # Avaliação do modelo
-        y_pred = classifier.predict(X_test)
-        print(classification_report(y_test, y_pred))
+                title = link.get_text().strip()
+                content_dict['id'] = generate_id(title)
+                content_dict['title'] = title
+                content_dict['link'] = link['href']
+                content_dict['sentiment'] = ''
+                content_dict['sentiment_score'] = 0
+                content_dict['scrapped_at'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                news_list.append(content_dict)
 
-        # Função para prever sentimento de novas notícias
-        def predict_sentiment(new_text):
-            new_text_preprocessed = preprocess_text(new_text)
-            new_text_vectorized = tfidf_vectorizer.transform([new_text_preprocessed]).toarray()
-            prediction = classifier.predict(new_text_vectorized)
-            return prediction
-
-        # Testando uma nova previsão
-        new_text = "A bolsa caiu hoje devido a incertezas no mercado."
-        print(f"Sentimento da nova notícia: {predict_sentiment(new_text)}")
+        return news_list
     else:
-        print("Nenhuma notícia foi encontrada.")
+        print("Falha ao acessar o site")
+        return []
+
+def fetch_news_cnn():
+    url = "https://www.cnnbrasil.com.br/economia/"
+    response = requests.get(url)
+
+    if response.status_code == 200:
+        soup = BeautifulSoup(response.content, 'html.parser')
+
+        news_list = []
+
+        news_title = soup.find_all(['h3', 'h2'], class_=['block__news__title', 'news-item-header__title'])
+        for title in news_title:
+            content_dict = {}
+            link = title.find_parent('a')
+            if link:
+                title = title.get_text().strip()    
+                content_dict['id'] = generate_id(title)
+                content_dict['title'] = title
+                content_dict['link'] = link['href']
+                content_dict['sentiment'] = ''
+                content_dict['sentiment_score'] = 0
+                content_dict['scrapped_at'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+                news_list.append(content_dict)
+
+        return news_list
+    else:
+        print("Falha ao acessar o site")
+        return []
+
+def save_csv(lista, filename):
+    headers = list(lista[0].keys())
+
+    try:
+        with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=headers, delimiter='|')
+            
+            writer.writeheader()
+            
+            for row in lista:
+
+                writer.writerow(row)
+        
+        print(f"Arquivo '{filename}' criado com sucesso.")
+    except IOError as e:
+        print(f"Erro ao criar o arquivo: {e}")
+
+def generate_id(title):
+    return hashlib.sha256(title.encode('utf-8')).hexdigest()[:16]
+
+def predict_sentiment(news_list):
+    print("Predizendo sentimento...")
+    tokenizer = AutoTokenizer.from_pretrained("pysentimiento/bertweet-pt-sentiment", clean_up_tokenization_spaces=True)
+    bert = AutoModelForSequenceClassification.from_pretrained("pysentimiento/bertweet-pt-sentiment")
+
+    labels = {0: "Negativo", 1: "Neutro", 2: "Positivo"}
+    with torch.no_grad():
+        for news in news_list:
+            print(f"Sentimento da notícia: {news['title']}", end="... ")
+            inputs = tokenizer(news['title'], return_tensors="pt", truncation=True)
+            outputs = bert(**inputs)
+
+            probabilities = torch.softmax(outputs.logits, dim=1).cpu().numpy()
+            
+            sentiment = labels[np.argmax(probabilities)]
+            sentiment_score = np.max(probabilities)
+
+            news['sentiment'] = sentiment
+            news['sentiment_score'] = sentiment_score
+
+            print(f"Sentimento: {sentiment}, Score: {sentiment_score}")
+
+
+    return news_list
+
+def main():
+    news = fetch_news_cnn()
+    news += fetch_news_valor()
+    news = predict_sentiment(news)
+    save_csv(news, f'news_{datetime.now().strftime("%Y-%m-%d_%H")}.csv')
+
 
 if __name__ == "__main__":
     main()
