@@ -139,9 +139,7 @@ def animate_astar(mapa, steps, start, end):
 
         ax.legend()
 
-    ani = animation.FuncAnimation(
-        fig, update, frames=len(steps), interval=1, repeat=False
-    )
+    animation.FuncAnimation(fig, update, frames=len(steps), interval=1, repeat=False)
     plt.show()
 
 

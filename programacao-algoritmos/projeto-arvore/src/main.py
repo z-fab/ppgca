@@ -1,4 +1,4 @@
-from algoritmos_recursao import BSTree, AVLTree
+from algoritmos import BinarySearchTree, AVLTree
 from utils import tempo
 import random
 import pickle
@@ -47,18 +47,18 @@ def buscar_elementos(arvore, key):
 
 
 if __name__ == "__main__":
-    n_iter = 10
-    n_search = 100
+    n_iter = 5
+    n_search = 10
 
     df = processar_dados()
 
     for i in range(n_iter):
         print(f"===== ITERAÇÃO {i} =====")
-        data = get_sample_random(1.0, df)
+        data = get_sample_random(0.1, df)
         data_to_search = random.sample(data, n_search)
 
         # Inserção
-        bst = BSTree()
+        bst = BinarySearchTree()
         _, tempo_insercao_bst = inserir_elementos(bst, data)
         print(f"BST: {tempo_insercao_bst} ms | Altura: {bst.tree_height()}")
 
