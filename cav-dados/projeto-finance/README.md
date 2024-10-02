@@ -36,6 +36,8 @@ Este projeto tem como objetivo coletar notícias financeiras de fontes específi
 
 ## Tecnologias Utilizadas
 
+![Diagrama](diagrama.jpeg)
+
 - **MongoDB**: Banco de dados para armazenar as notícias e valores coletados.
 - **Elasticsearch**: Banco de dados para armazenar as notícias e valores coletados.
 - **Kibana**: Ferramenta de visualização de dados para o Elasticsearch.
