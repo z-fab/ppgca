@@ -1,5 +1,15 @@
 # Projeto Finance - Coleta e Disponibilização de Dados Financeiros
 
+**Integrantes do Grupo**:
+
+- Daniel Mangabeira (RA 10729073)
+- Fabricio Zillig (RA 10241726)
+- Messias de Oliveira (RA 10310225)
+
+>[Artigo do Projeto](Coletor_e_Analisador_de_Notícias_Econômicas.pdf)
+
+---
+
 O projeto Finance tem como objetivo responder a seguinte pergunta: "As notícias financeiras afetam o valor do IBovespa?".
 
 Este projeto tem como objetivo coletar notícias financeiras de fontes específicas, prever o "mood" da notícia (se é positiva, negativa ou neutra) e coletar o valor do índice financeiro de hora em hora. Os dados coletados são disponibilizados via uma API para consumo e análise.
