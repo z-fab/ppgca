@@ -3,50 +3,60 @@ services:
   zookeeper:
     image: bitnami/zookeeper:latest
     container_name: zookeeper
-    ports:
-      - "2181:2181"
+    networks:
+      - cav-internal
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
-      - TZ=America/Sao_Paulo
-    volumes:
-      - zookeeper_data:/bitnami/zookeeper
+    healthcheck:
+      test: echo ruok | nc localhost 2181 | grep imok
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   kafka:
     image: bitnami/kafka:latest
     container_name: kafka
-    ports:
-      - "9092:9092"
+    networks:
+      - cav-internal
     environment:
       - KAFKA_BROKER_ID=1
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
-      - KAFKA_LISTENERS=PLAINTEXT://:9092
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CFG_LISTENERS=INTERNAL://0.0.0.0:9093,EXTERNAL://0.0.0.0:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka:9093,EXTERNAL://localhost:9092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL
       - ALLOW_PLAINTEXT_LISTENER=yes
-      - TZ=America/Sao_Paulo
     depends_on:
-      - zookeeper
-    volumes:
-      - kafka_data:/bitnami/kafka
+      zookeeper:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "kafka:9093", "--list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   mongodb:
     image: mongo:latest
     container_name: mongodb
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data:/data/db
+    networks:
+      - cav-internal
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongo localhost:27017/test --quiet | grep 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.2
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.0
     container_name: elasticsearch
+    networks:
+      - cav-internal
     environment:
       - discovery.type=single-node
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
       - xpack.security.enabled=false
-      - TZ=America/Sao_Paulo
     ports:
-      - "9200:9200"
-      - "9300:9300"
+      - "9200:9200" # Temporariamente exposto para configuração inicial
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
     healthcheck:
@@ -56,16 +66,17 @@ services:
       retries: 5
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.15.2
+    image: docker.elastic.co/kibana/kibana:8.10.0
     container_name: kibana
+    networks:
+      - zfab
+      - cav-internal
     ports:
-      - "5601:5601"
+      - "5601:5601" # Porta do Kibana para Caddy
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-      - TZ=America/Sao_Paulo
     depends_on:
-      elasticsearch:
-        condition: service_healthy
+      - elasticsearch
     healthcheck:
       test: curl -f http://localhost:5601/api/status || exit 1
       interval: 10s
@@ -77,6 +88,8 @@ services:
       context: ..
       dockerfile: docker/python-dockerfile
     container_name: producer
+    networks:
+      - cav-internal
     env_file:
       - ../.env
     depends_on:
@@ -93,6 +106,8 @@ services:
       context: ..
       dockerfile: docker/python-dockerfile
     container_name: consumer
+    networks:
+      - cav-internal
     env_file:
       - ../.env
     depends_on:
@@ -110,6 +125,9 @@ services:
       context: ..
       dockerfile: docker/python-dockerfile
     container_name: api
+    networks:
+      - zfab
+      - cav-internal
     env_file:
       - ../.env
     ports:
@@ -127,4 +145,10 @@ volumes:
   kafka_data:
   mongodb_data:
   elasticsearch_data:
-  
+
+networks:
+  cav-internal:
+    driver: bridge
+  zfab:
+    name: zfab-network
+    external: true
