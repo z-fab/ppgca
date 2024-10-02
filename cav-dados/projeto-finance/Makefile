@@ -1,6 +1,6 @@
 # Caminho para a pasta docker
 DOCKER_DIR = docker
-DOCKER_FILE = $(DOCKER_DIR)/compose.dev.yml
+DOCKER_FILE = $(DOCKER_DIR)/compose.prod.yml
 
 .PHONY: build up down logs
 

@@ -2,10 +2,12 @@ from fastapi import FastAPI
 from routers.news import router as news_router
 from routers.ibov import router as ibov_router
 from dotenv import load_dotenv
+import os
 
 load_dotenv()
+root_path = os.getenv('ROOT_PATH', '')
 
-app = FastAPI()
+app = FastAPI(root_path=root_path)
 
 app.include_router(news_router)
 app.include_router(ibov_router)

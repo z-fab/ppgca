@@ -7,11 +7,6 @@ services:
       - cav-internal
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
-    healthcheck:
-      test: echo ruok | nc localhost 2181 | grep imok
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   kafka:
     image: bitnami/kafka:latest
@@ -22,32 +17,21 @@ services:
       - KAFKA_BROKER_ID=1
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
       - KAFKA_CFG_LISTENERS=INTERNAL://0.0.0.0:9093,EXTERNAL://0.0.0.0:9092
-      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka:9093,EXTERNAL://localhost:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka:9093,EXTERNAL://kafka:9092
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
       - KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL
       - ALLOW_PLAINTEXT_LISTENER=yes
     depends_on:
-      zookeeper:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "kafka-topics", "--bootstrap-server", "kafka:9093", "--list"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - zookeeper
 
   mongodb:
     image: mongo:latest
     container_name: mongodb
     networks:
       - cav-internal
-    healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongo localhost:27017/test --quiet | grep 1
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
     container_name: elasticsearch
     networks:
       - cav-internal
@@ -59,14 +43,9 @@ services:
       - "9200:9200" # Temporariamente exposto para configuração inicial
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
-    healthcheck:
-      test: curl -f http://localhost:9200/_cluster/health || exit 1
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.10.0
+    image: docker.elastic.co/kibana/kibana:8.15.0
     container_name: kibana
     networks:
       - zfab
@@ -75,13 +54,12 @@ services:
       - "5601:5601" # Porta do Kibana para Caddy
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - SERVER_BASEPATH=/projeto-finance/kibana
+      - SERVER_REWRITEBASEPATH=true
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=5601
     depends_on:
       - elasticsearch
-    healthcheck:
-      test: curl -f http://localhost:5601/api/status || exit 1
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   producer:
     build:
@@ -136,6 +114,7 @@ services:
       - mongodb
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/
+      - ROOT_PATH=/projeto-finance/api
       - TZ=America/Sao_Paulo
     command: >
       python api/main.py
