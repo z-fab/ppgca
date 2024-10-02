@@ -7,6 +7,7 @@ services:
       - "2181:2181"
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
+      - TZ=America/Sao_Paulo
     volumes:
       - zookeeper_data:/bitnami/zookeeper
 
@@ -21,6 +22,7 @@ services:
       - KAFKA_LISTENERS=PLAINTEXT://:9092
       - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
       - ALLOW_PLAINTEXT_LISTENER=yes
+      - TZ=America/Sao_Paulo
     depends_on:
       - zookeeper
     volumes:
@@ -34,17 +36,56 @@ services:
     volumes:
       - mongodb_data:/data/db
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.2
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - xpack.security.enabled=false
+      - TZ=America/Sao_Paulo
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: curl -f http://localhost:9200/_cluster/health || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.15.2
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - TZ=America/Sao_Paulo
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: curl -f http://localhost:5601/api/status || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   producer:
     build:
       context: ..
       dockerfile: docker/python-dockerfile
     container_name: producer
+    env_file:
+      - ../.env
     depends_on:
       - kafka
     environment:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - TZ=America/Sao_Paulo
     command: >
-      bash -c "/wait-for-it.sh kafka:9092 --timeout=20 --strict -- python main.py producer"
+      bash -c "/wait-for-it.sh kafka:9092 --timeout=20 --strict -- /wait-for-it.sh elasticsearch:9200 --timeout=20 --strict -- python main.py producer"
 
 
   consumer:
@@ -52,25 +93,32 @@ services:
       context: ..
       dockerfile: docker/python-dockerfile
     container_name: consumer
+    env_file:
+      - ../.env
     depends_on:
       - kafka
       - mongodb
     environment:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - MONGODB_HOST=mongodb
+      - TZ=America/Sao_Paulo
     command: >
-      bash -c "/wait-for-it.sh kafka:9092 --timeout=20 --strict -- python main.py consumer"
+      bash -c "/wait-for-it.sh kafka:9092 --timeout=20 --strict -- /wait-for-it.sh elasticsearch:9200 --timeout=20 --strict -- python main.py consumer"
+  
   api:
     build:
       context: ..
       dockerfile: docker/python-dockerfile
     container_name: api
+    env_file:
+      - ../.env
     ports:
       - "8000:8000"
     depends_on:
       - mongodb
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/
+      - TZ=America/Sao_Paulo
     command: >
       python api/main.py
 
@@ -78,3 +126,5 @@ volumes:
   zookeeper_data:
   kafka_data:
   mongodb_data:
+  elasticsearch_data:
+  

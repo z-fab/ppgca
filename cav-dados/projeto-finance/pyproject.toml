@@ -19,6 +19,7 @@ transformers = "^4.45.1"
 yfinance = "^0.2.44"
 fastapi = "^0.115.0"
 uvicorn = "^0.31.0"
+elasticsearch = "^8.15.1"
 
 
 [build-system]

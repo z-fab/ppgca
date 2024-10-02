@@ -9,7 +9,8 @@ Este projeto tem como objetivo coletar notícias financeiras de fontes específi
 
 - Coleta de notícias financeiras de fontes específicas utilizando `web scraping` (via BeautifulSoup).
 - Coleta do valor do índice financeiro de hora em hora utilizando a biblioteca `yfinance`.
-- Registro das informações coletadas no banco de dados `MongoDB` através de `Streaming` usando `Kafka`.
+- Registro das informações coletadas no banco de dados `MongoDB` e `ElasticSearch` através de `Streaming` usando `Kafka`.
+- Visualização dos dados coletados através do `Kibana`.
 - Agendamento de tarefas para coleta automática utilizando `APScheduler`.
 - Disponibilização dos dados via uma API construída com `FastAPI`.
 
@@ -21,6 +22,8 @@ Este projeto tem como objetivo coletar notícias financeiras de fontes específi
 ## Tecnologias Utilizadas
 
 - **MongoDB**: Banco de dados para armazenar as notícias e valores coletados.
+- **Elasticsearch**: Banco de dados para armazenar as notícias e valores coletados.
+- **Kibana**: Ferramenta de visualização de dados para o Elasticsearch.
 - **Pytorch** e **Transformers**: Para realizar a classificação de sentimento das notícias.
 - **Kafka**: Para processamento e comunicação entre serviços.
 - **BeautifulSoup**: Utilizado para fazer scraping de notícias financeiras.

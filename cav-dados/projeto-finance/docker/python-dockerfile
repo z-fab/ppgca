@@ -6,12 +6,15 @@ ENV TZ="America/Sao_Paulo"
 ENV POETRY_HOME=/opt/poetry
 ENV PATH="$POETRY_HOME/bin:$PATH"
 
-RUN date
 RUN apt-get update && apt-get install -y \
     curl \
     build-essential \
     libpq-dev \
+    tzdata \
     && rm -rf /var/lib/apt/lists/*
+
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+RUN date
 
 COPY pyproject.toml poetry.lock* /app/
 COPY docker/wait-for-it.sh /wait-for-it.sh

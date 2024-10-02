@@ -29,7 +29,7 @@ def fetch_news_valor():
             content_dict["link"] = content_title["href"]
             content_dict["sentiment"] = ""
             content_dict["sentiment_score"] = 0
-            content_dict["scrapped_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            content_dict["scrapped_at"] = datetime.now().isoformat(sep="T")
 
             news_list.append(content_dict)
 
@@ -45,9 +45,7 @@ def fetch_news_valor():
                 content_dict["link"] = link["href"]
                 content_dict["sentiment"] = ""
                 content_dict["sentiment_score"] = 0
-                content_dict["scrapped_at"] = datetime.now().strftime(
-                    "%Y-%m-%d %H:%M:%S"
-                )
+                content_dict["scrapped_at"] = datetime.now().isoformat(sep="T")
                 news_list.append(content_dict)
 
         return news_list
@@ -78,9 +76,7 @@ def fetch_news_cnn():
                 content_dict["link"] = link["href"]
                 content_dict["sentiment"] = ""
                 content_dict["sentiment_score"] = 0
-                content_dict["scrapped_at"] = datetime.now().strftime(
-                    "%Y-%m-%d %H:%M:%S"
-                )
+                content_dict["scrapped_at"] = datetime.now().isoformat(sep="T")
 
                 news_list.append(content_dict)
 

@@ -6,18 +6,20 @@ from repository import ibovespa_repository as ibov
 from dotenv import load_dotenv
 import logging
 
-load_dotenv()
 
-logger = logging.getLogger("projeto-finance")
-logging.basicConfig(level=logging.DEBUG)
+def setup():
+    load_dotenv(override=True)
 
-formatter = logging.Formatter(
-    "\n[%(levelname)s] %(asctime)s :: %(filename)s (%(funcName)s)\n%(message)s"
-)
+    logger = logging.getLogger("projeto-finance")
+    logging.basicConfig(level=logging.DEBUG)
 
-console_handler = logging.StreamHandler()
-console_handler.setFormatter(formatter)
-logger.addHandler(console_handler)
+    formatter = logging.Formatter(
+        "\n[%(levelname)s] %(asctime)s :: %(filename)s (%(funcName)s)\n%(message)s"
+    )
+
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
 
 
 def main():
@@ -37,4 +39,5 @@ def main():
 
 
 if __name__ == "__main__":
+    setup()
     main()

@@ -7,7 +7,7 @@ LOGGER = logging.getLogger("projeto-finance")
 
 def get_ibovespa():
     end_time = datetime.now()
-    start_time = end_time - timedelta(days=1)  # Último dia
+    start_time = end_time - timedelta(days=5)
 
     LOGGER.info(f"Buscando dados da Ibovespa de {start_time} até {end_time}")
 
@@ -31,7 +31,7 @@ def get_ibovespa():
 
     # Resetar o índice para facilitar a manipulação
     ibov.reset_index(inplace=True)
-    ibov["Datetime"] = ibov["Datetime"].dt.strftime("%Y-%m-%d %H:%M:%S")
+    ibov["Datetime"] = ibov["Datetime"].apply(lambda x: x.isoformat())
 
     # Selecionar apenas as colunas necessárias
     ibov_hourly_average = ibov[["Datetime", "Average"]].rename(
