@@ -6,7 +6,12 @@
 - Fabricio Zillig (RA 10241726)
 - Messias de Oliveira (RA 10310225)
 
->[Artigo do Projeto](Coletor_e_Analisador_de_Notícias_Econômicas.pdf)
+**Link para Artigo**: [Coletor_e_Analisador_de_Notícias_Econômicas.pdf](Coletor_e_Analisador_de_Notícias_Econômicas.pdf)
+
+**Link API**: http://ppgca.zfab.me/projeto-finance/api/docs
+
+**Link Kibana**: http://ppgca.zfab.me/projeto-finance/kibana
+*Login: admin / mackrogerio*
 
 ---
 
