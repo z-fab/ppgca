@@ -1,10 +1,8 @@
-from algoritmos import BinarySearchTree, AVLTree
+from arvores import BinarySearchTree, AVLTree
 from utils import tempo
 import random
 import pickle
-
 import polars as pl
-
 import sys
 
 sys.setrecursionlimit(10**6)
@@ -25,14 +23,20 @@ def processar_dados():
             pl.col("Director").alias("diretor"),
             pl.col("genres_list").alias("genero"),
         )
-        .sample(fraction=1.0, shuffle=True)
+        .with_columns(
+            (pl.col("titulo") + " - " + pl.col("diretor")).alias("titulo_diretor"),
+        )
+        .unique(subset=["id"])
     )
 
-    return df
+    return df, df.unique(subset=["titulo_diretor"])
 
 
 def get_sample_random(fraction, df):
-    return df.sample(fraction=fraction, shuffle=True).to_dicts()
+    return (
+        df.sample(fraction=fraction, shuffle=True)
+        # .sort("id")
+    ).to_dicts()
 
 
 @tempo
@@ -47,32 +51,34 @@ def buscar_elementos(arvore, key):
 
 
 if __name__ == "__main__":
-    n_iter = 5
-    n_search = 10
+    n_iter = 10
+    n_search = 100
+    sample = 1
 
-    df = processar_dados()
+    df_id, df_titulo = processar_dados()
+    df = df_id.clone()
 
     for i in range(n_iter):
-        print(f"===== ITERAÇÃO {i} =====")
-        data = get_sample_random(0.1, df)
+        data = get_sample_random(sample, df)
         data_to_search = random.sample(data, n_search)
+        print(f"===== ITERAÇÃO {i} - N: {len(data)} =====")
 
         # Inserção
         bst = BinarySearchTree()
         _, tempo_insercao_bst = inserir_elementos(bst, data)
-        print(f"BST: {tempo_insercao_bst} ms | Altura: {bst.tree_height()}")
+        print(f"BST: {tempo_insercao_bst} ms | Altura: {bst.height()}")
 
         avl = AVLTree()
         _, tempo_insercao_avl = inserir_elementos(avl, data)
-        print(f"AVL: {tempo_insercao_avl} ms | Altura: {avl.tree_height()}")
+        print(f"AVL: {tempo_insercao_avl} ms | Altura: {avl.height()}")
 
         result_insercao.append(
             {
                 "n_iter": i,
                 "tempo_insercao_bst": tempo_insercao_bst,
                 "tempo_insercao_avl": tempo_insercao_avl,
-                "altura_bst": bst.tree_height(),
-                "altura_avl": avl.tree_height(),
+                "altura_bst": bst.height(),
+                "altura_avl": avl.height(),
             }
         )
 
@@ -91,8 +97,8 @@ if __name__ == "__main__":
                     "n_search": n_search,
                     "tempo_busca_avl": tempo_busca_avl,
                     "tempo_busca_bst": tempo_busca_bst,
-                    "altura_bst": bst.tree_height(),
-                    "altura_avl": avl.tree_height(),
+                    "altura_bst": bst.height(),
+                    "altura_avl": avl.height(),
                 }
             )
     print("====================================")
@@ -109,5 +115,10 @@ if __name__ == "__main__":
         f"Média de tempo de busca AVL: {sum([r['tempo_busca_avl'] for r in result_search]) / n_iter} ms"
     )
 
-    with open("data/result_insercao_recursao.pkl", "wb") as f:
-        pickle.dump(result_insercao, f)
+    result = {
+        "result_insercao": result_insercao,
+        "result_search": result_search,
+    }
+
+    with open("data/result_id.pkl", "wb") as f:
+        pickle.dump(result, f)
