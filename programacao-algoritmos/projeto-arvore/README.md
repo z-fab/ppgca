@@ -2,6 +2,8 @@
 
 Projeto da disciplina Algoritmos e Estruturas de Dados do curso de pós-graduação em Computação Aplicada (PPGCA) da Universidade Presbiteriana Mackenzie.
 
+Autor: Fabricio Zillig
+
 ---
 
 ### Projeto:
