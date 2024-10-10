@@ -31,7 +31,7 @@ d) Gerar um relatório com:
 ### Conclusões principais:
 
 - A AVL apresentou um desempenho de inserção mais estável, porém com tempo de inserção superior ao da BST devido ao trabalho adicional necessário para manter o balanceamento.
-- Em termos de busca, apesar da AVL ter uma estrutura balanceada, não houve uma vantagem clara sobre a BST em todos os casos.
+- Em termos de busca, a árvore AVL apresentou desempenho superior à BST
 - A BST sofre muito mais com inserções ordenadas, tornando-se desbalanceada e apresentando degradação significativa de desempenho, enquanto a AVL mantém uma altura muito menor.
 - A AVL é mais adequada para cenários onde a previsibilidade da altura da árvore é crucial, enquanto a BST pode ser útil em situações onde as inserções são aleatórias e a simplicidade é uma prioridade.
 
